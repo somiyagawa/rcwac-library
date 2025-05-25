@@ -723,7 +723,13 @@
         let currentSearchType = 'all';
         let currentSearchResults = [];
         let currentLanguage = 'ja';
-        const BIBTEX_FILENAME = 'export-data.bib';
+        
+        // Detect if running on GitHub Pages and adjust path accordingly
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const basePath = isGitHubPages && window.location.pathname !== '/' 
+            ? window.location.pathname.replace(/\/[^\/]*$/, '') 
+            : '';
+        const BIBTEX_FILENAME = basePath ? `${basePath}/export-data.bib` : 'export-data.bib';
         
         // Translation data
         const translations = {
@@ -1168,15 +1174,30 @@
                 }
             }
             
-            // Method 2: Try fetch (for web server)
+            // Method 2: Try fetch (for web server and GitHub Pages)
             if (!content) {
                 try {
-                    const response = await fetch(BIBTEX_FILENAME);
-                    if (response.ok) {
-                        content = await response.text();
+                    // Try multiple paths for better compatibility
+                    const pathsToTry = [
+                        BIBTEX_FILENAME,
+                        './export-data.bib',
+                        'export-data.bib'
+                    ];
+                    
+                    for (const path of pathsToTry) {
+                        try {
+                            const response = await fetch(path);
+                            if (response.ok) {
+                                content = await response.text();
+                                console.log(`Successfully loaded from: ${path}`);
+                                break;
+                            }
+                        } catch (e) {
+                            console.log(`Failed to load from ${path}`);
+                        }
                     }
                 } catch (error) {
-                    console.log('Fetch failed, showing manual upload option...');
+                    console.log('All fetch attempts failed, showing manual upload option...');
                 }
             }
             
