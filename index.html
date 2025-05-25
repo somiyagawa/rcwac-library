@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UTsukuba RCWAC OPAC | 筑波大学西アジア文明研究センター蔵書検索システム</title>
+    <title>WASRC Digital Library | 西アジア文明研究センター電子図書館</title>
     <style>
         * {
             margin: 0;
@@ -628,9 +628,9 @@
                          alt="西アジア文明研究センター" 
                          class="logo-img">
                     <div class="logo-text">
-                        <h1>UTsukuba RCWAC OPAC</h1>
-                        <p data-i18n="header.subtitle">筑波大学西アジア文明研究センター蔵書検索システム</p>
-                        <p style="font-size: 0.85rem;" data-i18n="header.subtitle2">UTsukuba Research Center for West Asian Civilization Library Catalogue</p>
+                        <h1>WASRC Digital Library</h1>
+                        <p data-i18n="header.subtitle">西アジア文明研究センター電子図書館</p>
+                        <p style="font-size: 0.85rem;" data-i18n="header.subtitle2">Research Center for West Asian Civilization</p>
                     </div>
                 </div>
                 <div class="header-controls">
@@ -729,7 +729,7 @@
         const basePath = isGitHubPages && window.location.pathname !== '/' 
             ? window.location.pathname.replace(/\/[^\/]*$/, '') 
             : '';
-        const BIBTEX_FILENAME = basePath ? `${basePath}/export-data.bib` : 'export-data.bib';
+        const RDF_FILENAME = basePath ? `${basePath}/library-data.rdf` : 'library-data.rdf';
         
         // Translation data
         const translations = {
@@ -744,7 +744,7 @@
                     lightMode: 'ライトモード'
                 },
                 status: {
-                    loading: '📖 BibTeXファイルを読み込み中...',
+                    loading: '📖 RDFファイルを読み込み中...',
                     success: '✅ {filename} を読み込みました ({count}件の文献)',
                     error: '❌ エラー: {filename} が見つかりません。ファイルがHTMLと同じフォルダにあることを確認してください。'
                 },
@@ -799,6 +799,7 @@
                     journal: '雑誌',
                     volume: '巻',
                     pages: 'ページ',
+                    callNumber: '請求記号',
                     copied: 'コピーしました！'
                 },
                 alert: {
@@ -816,7 +817,7 @@
                     lightMode: 'Light Mode'
                 },
                 status: {
-                    loading: '📖 Loading BibTeX file...',
+                    loading: '📖 Loading RDF file...',
                     success: '✅ Loaded {filename} ({count} references)',
                     error: '❌ Error: {filename} not found. Please ensure the file is in the same folder as the HTML file.'
                 },
@@ -871,6 +872,7 @@
                     journal: 'Journal',
                     volume: 'Volume',
                     pages: 'Pages',
+                    callNumber: 'Call Number',
                     copied: 'Copied!'
                 },
                 alert: {
@@ -888,9 +890,11 @@
                 'ロシア語': 'ロシア語',
                 '英語': '英語',
                 'ドイツ語': 'ドイツ語',
+                'フランス語': 'フランス語',
                 'アッカド語': 'アッカド語',
                 'ウガリット語': 'ウガリット語',
-                'エジプト語': 'エジプト語'
+                'エジプト語': 'エジプト語',
+                '多言語': '多言語'
             },
             en: {
                 'アラビア語': 'Arabic',
@@ -899,9 +903,11 @@
                 'ロシア語': 'Russian',
                 '英語': 'English',
                 'ドイツ語': 'German',
+                'フランス語': 'French',
                 'アッカド語': 'Akkadian',
                 'ウガリット語': 'Ugaritic',
-                'エジプト語': 'Egyptian'
+                'エジプト語': 'Egyptian',
+                '多言語': 'Multilingual'
             }
         };
         
@@ -1045,14 +1051,14 @@
             // Update current status message if needed
             const statusMessage = document.getElementById('statusMessage');
             if (statusMessage.querySelector('.status-success')) {
-                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', BIBTEX_FILENAME).replace('{count}', bibData.length)}</span>`;
+                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', RDF_FILENAME).replace('{count}', bibData.length)}</span>`;
             } else if (statusMessage.querySelector('.status-error') && statusMessage.querySelector('button')) {
                 // Re-render the manual upload button with correct language
                 statusMessage.innerHTML = `
                     <span class="status-error">${currentLanguage === 'ja' 
                         ? '自動読み込みに失敗しました。' 
                         : 'Failed to load automatically.'}</span>
-                    <input type="file" id="manualFileInput" accept=".bib,.bibtex" style="display: none;">
+                    <input type="file" id="manualFileInput" accept=".rdf,.xml" style="display: none;">
                     <button class="control-button" style="margin-left: 1rem;" onclick="document.getElementById('manualFileInput').click()">
                         📁 ${currentLanguage === 'ja' ? 'ファイルを選択' : 'Select File'}
                     </button>
@@ -1065,7 +1071,7 @@
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const content = e.target.result;
-                            parseBibTeX(content);
+                            parseRDF(content);
                             
                             statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', file.name).replace('{count}', bibData.length)}</span>`;
                             
@@ -1094,71 +1100,162 @@
             }
         }
         
-        // BibTeX Parser
-        class BibTeXParser {
+        // RDF Parser for Zotero
+        class ZoteroRDFParser {
             constructor() {
                 this.entries = [];
             }
             
-            parse(bibtexString) {
+            parse(rdfString) {
                 this.entries = [];
-                const entryRegex = /@(\w+)\s*\{([^,]+),\s*([\s\S]*?)\n\}/gm;
-                let match;
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(rdfString, "text/xml");
                 
-                while ((match = entryRegex.exec(bibtexString)) !== null) {
-                    const entryType = match[1].toLowerCase();
-                    const citationKey = match[2].trim();
-                    const fieldsString = match[3];
-                    
-                    const fields = this.parseFields(fieldsString);
-                    fields.entryType = entryType;
-                    fields.citationKey = citationKey;
-                    
-                    this.entries.push(fields);
+                // Check for parsing errors
+                const parseError = xmlDoc.querySelector('parsererror');
+                if (parseError) {
+                    console.error('RDF parsing error:', parseError.textContent);
+                    return [];
                 }
+                
+                // Get all book entries
+                const books = xmlDoc.querySelectorAll('Book');
+                
+                books.forEach(book => {
+                    const entry = this.parseBook(book);
+                    if (entry) {
+                        this.entries.push(entry);
+                    }
+                });
                 
                 return this.entries;
             }
             
-            parseFields(fieldsString) {
-                const fields = {};
-                const fieldRegex = /(\w+)\s*=\s*(?:\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}|"([^"]*)"|(\d+))/g;
-                let match;
+            parseBook(bookElement) {
+                const entry = {};
                 
-                while ((match = fieldRegex.exec(fieldsString)) !== null) {
-                    const fieldName = match[1].toLowerCase();
-                    const fieldValue = match[2] || match[3] || match[4] || '';
-                    fields[fieldName] = this.cleanFieldValue(fieldValue);
+                // Get citation key from rdf:about attribute
+                const about = bookElement.getAttribute('rdf:about');
+                entry.citationKey = about ? about.replace('#', '').replace('urn:', '') : 'unknown';
+                
+                // Title
+                const titleElem = bookElement.querySelector('title');
+                entry.title = titleElem ? titleElem.textContent : '';
+                
+                // Short title (if exists)
+                const shortTitleElem = bookElement.querySelector('shortTitle');
+                entry.shortTitle = shortTitleElem ? shortTitleElem.textContent : '';
+                
+                // Authors
+                entry.authors = [];
+                const authorSeq = bookElement.querySelector('authors Seq');
+                if (authorSeq) {
+                    authorSeq.querySelectorAll('Person').forEach(person => {
+                        const surname = person.querySelector('surname');
+                        const givenName = person.querySelector('givenName');
+                        if (surname) {
+                            const name = givenName 
+                                ? `${givenName.textContent} ${surname.textContent}`
+                                : surname.textContent;
+                            entry.authors.push(name);
+                        }
+                    });
                 }
                 
-                return fields;
+                // Editors (if no authors)
+                if (entry.authors.length === 0) {
+                    const editorSeq = bookElement.querySelector('editors Seq');
+                    if (editorSeq) {
+                        editorSeq.querySelectorAll('Person').forEach(person => {
+                            const surname = person.querySelector('surname');
+                            const givenName = person.querySelector('givenName');
+                            if (surname) {
+                                const name = givenName 
+                                    ? `${givenName.textContent} ${surname.textContent}`
+                                    : surname.textContent;
+                                entry.authors.push(name);
+                            }
+                        });
+                    }
+                }
+                
+                // Date/Year
+                const dateElem = bookElement.querySelector('date');
+                entry.year = dateElem ? dateElem.textContent : '';
+                
+                // Publisher
+                const publisherName = bookElement.querySelector('publisher name');
+                entry.publisher = publisherName ? publisherName.textContent : '';
+                
+                // Publisher location
+                const publisherLocality = bookElement.querySelector('publisher locality');
+                entry.address = publisherLocality ? publisherLocality.textContent : '';
+                
+                // Language
+                const langElem = bookElement.querySelector('language');
+                entry.language = langElem ? langElem.textContent : '';
+                
+                // Abstract
+                const abstractElem = bookElement.querySelector('abstract');
+                entry.abstract = abstractElem ? this.cleanAbstract(abstractElem.textContent) : '';
+                
+                // ISBN
+                const identifierElems = bookElement.querySelectorAll('identifier');
+                identifierElems.forEach(elem => {
+                    const text = elem.textContent;
+                    if (text.includes('ISBN')) {
+                        entry.isbn = text.replace('ISBN ', '');
+                    }
+                });
+                
+                // Series
+                const seriesTitle = bookElement.querySelector('isPartOf Series title');
+                const seriesNumber = bookElement.querySelector('isPartOf Series identifier');
+                if (seriesTitle || seriesNumber) {
+                    entry.series = seriesTitle ? seriesTitle.textContent : '';
+                    entry.number = seriesNumber ? seriesNumber.textContent : '';
+                }
+                
+                // Volume
+                const volumeElem = bookElement.querySelector('volume');
+                entry.volume = volumeElem ? volumeElem.textContent : '';
+                
+                // Pages
+                const pagesElem = bookElement.querySelector('numPages');
+                entry.pages = pagesElem ? pagesElem.textContent : '';
+                
+                // Call number (LCC)
+                const lccElem = bookElement.querySelector('subject LCC value');
+                entry.callNumber = lccElem ? lccElem.textContent : '';
+                
+                // Keywords/Subjects
+                entry.keywords = [];
+                bookElement.querySelectorAll('subject AutomaticTag value').forEach(tag => {
+                    const keywords = tag.textContent.split(/[;,]/).map(k => k.trim());
+                    entry.keywords.push(...keywords);
+                });
+                
+                // ISSN (from description)
+                const descElem = bookElement.querySelector('description');
+                if (descElem && descElem.textContent.includes('ISSN')) {
+                    entry.issn = descElem.textContent.match(/ISSN[:\s]+([0-9-]+)/)?.[1] || descElem.textContent.replace('ISSN: ', '');
+                }
+                
+                // Item type
+                const itemTypeElem = bookElement.querySelector('itemType');
+                entry.entryType = itemTypeElem ? itemTypeElem.textContent : 'book';
+                
+                return entry;
             }
             
-            cleanFieldValue(value) {
-                // Remove LaTeX commands and clean up
-                return value
-                    .replace(/\\textit\{([^}]+)\}/g, '$1')
-                    .replace(/\\emph\{([^}]+)\}/g, '$1')
-                    .replace(/\\textbf\{([^}]+)\}/g, '$1')
-                    .replace(/\\'([aeiouy])/g, '$1́')
-                    .replace(/\\`([aeiouy])/g, '$1̀')
-                    .replace(/\\"([aeiouy])/g, '$1̈')
-                    .replace(/\\~([aon])/g, '$1̃')
-                    .replace(/\\\^([aeiouy])/g, '$1̂')
-                    .replace(/\\c\{([cC])\}/g, '$1̧')
-                    .replace(/\\&/g, '&')
-                    .replace(/\\\$/g, '$')
-                    .replace(/\\%/g, '%')
-                    .replace(/\\#/g, '#')
-                    .replace(/\\_/g, '_')
-                    .replace(/\{|\}/g, '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
+            cleanAbstract(text) {
+                // Remove special notation like $Cnote$V
+                return text.replace(/\$\$C[^$]+\$\$V/g, '').trim();
             }
         }
         
-        // Load BibTeX file on page load
-        async function loadBibTeXFile() {
+        // Load RDF file on page load
+        async function loadRDFFile() {
             const statusMessage = document.getElementById('statusMessage');
             const searchInput = document.getElementById('searchInput');
             const searchButton = document.getElementById('searchButton');
@@ -1168,7 +1265,7 @@
             // Method 1: Try window.fs.readFile (for Claude environment)
             if (window.fs && window.fs.readFile) {
                 try {
-                    content = await window.fs.readFile(BIBTEX_FILENAME, { encoding: 'utf8' });
+                    content = await window.fs.readFile(RDF_FILENAME, { encoding: 'utf8' });
                 } catch (error) {
                     console.log('window.fs.readFile failed, trying fetch...');
                 }
@@ -1179,9 +1276,9 @@
                 try {
                     // Try multiple paths for better compatibility
                     const pathsToTry = [
-                        BIBTEX_FILENAME,
-                        './export-data.bib',
-                        'export-data.bib'
+                        RDF_FILENAME,
+                        './library-data.rdf',
+                        'library-data.rdf'
                     ];
                     
                     for (const path of pathsToTry) {
@@ -1203,11 +1300,11 @@
             
             // If content was loaded successfully
             if (content) {
-                // Parse the BibTeX content
-                parseBibTeX(content);
+                // Parse the RDF content
+                parseRDF(content);
                 
                 // Update status
-                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', BIBTEX_FILENAME).replace('{count}', bibData.length)}</span>`;
+                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', RDF_FILENAME).replace('{count}', bibData.length)}</span>`;
                 
                 // Enable search
                 searchInput.disabled = false;
@@ -1219,12 +1316,12 @@
                 displayAllResults();
             } else {
                 // Show manual upload option
-                console.error('Could not load BibTeX file automatically');
+                console.error('Could not load RDF file automatically');
                 statusMessage.innerHTML = `
                     <span class="status-error">${currentLanguage === 'ja' 
                         ? '自動読み込みに失敗しました。' 
                         : 'Failed to load automatically.'}</span>
-                    <input type="file" id="manualFileInput" accept=".bib,.bibtex" style="display: none;">
+                    <input type="file" id="manualFileInput" accept=".rdf,.xml" style="display: none;">
                     <button class="control-button" style="margin-left: 1rem;" onclick="document.getElementById('manualFileInput').click()">
                         📁 ${currentLanguage === 'ja' ? 'ファイルを選択' : 'Select File'}
                     </button>
@@ -1237,7 +1334,7 @@
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const content = e.target.result;
-                            parseBibTeX(content);
+                            parseRDF(content);
                             
                             statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', file.name).replace('{count}', bibData.length)}</span>`;
                             
@@ -1256,13 +1353,13 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">📁</div>
                         <p>${currentLanguage === 'ja' 
-                            ? 'BibTeXファイルを選択してください' 
-                            : 'Please select a BibTeX file'}</p>
+                            ? 'Zotero RDFファイルを選択してください' 
+                            : 'Please select a Zotero RDF file'}</p>
                         <div class="info-box" style="text-align: left; max-width: 600px; margin: 2rem auto;">
                             <h4>${currentLanguage === 'ja' ? 'ファイル読み込みについて' : 'About File Loading'}</h4>
                             <p>${currentLanguage === 'ja' 
-                                ? 'このシステムは以下の方法でBibTeXファイルを読み込みます：' 
-                                : 'This system loads BibTeX files using the following methods:'}</p>
+                                ? 'このシステムはZotero RDFファイルを読み込みます：' 
+                                : 'This system loads Zotero RDF files:'}</p>
                             <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
                                 <li>${currentLanguage === 'ja'
                                     ? 'Webサーバー経由: HTTPサーバーでホストされている場合、自動的に読み込みます'
@@ -1272,22 +1369,22 @@
                                     : 'Manual selection: Select local files using the button above'}</li>
                             </ul>
                             <p style="margin-top: 1rem;">${currentLanguage === 'ja'
-                                ? 'ヒント: Visual Studio CodeのLive ServerやPythonのhttp.serverなどを使用すると、自動読み込みが可能です。'
-                                : 'Tip: Use tools like VS Code Live Server or Python http.server for automatic loading.'}</p>
+                                ? '注意: デフォルトのファイル名は library-data.rdf です。'
+                                : 'Note: The default filename is library-data.rdf'}</p>
                         </div>
                     </div>
                 `;
             }
         }
         
-        function parseBibTeX(content) {
-            const parser = new BibTeXParser();
+        function parseRDF(content) {
+            const parser = new ZoteroRDFParser();
             const entries = parser.parse(content);
             
             bibData = entries.map(entry => ({
                 id: entry.citationKey,
                 title: entry.title || 'No title',
-                authors: parseAuthors(entry.author || entry.editor || ''),
+                authors: entry.authors || [],
                 year: entry.year || 'n.d.',
                 type: mapEntryType(entry.entryType),
                 journal: entry.journal || entry.booktitle || '',
@@ -1295,33 +1392,20 @@
                 pages: entry.pages || '',
                 doi: entry.doi || '',
                 isbn: entry.isbn || '',
+                issn: entry.issn || '',
                 publisher: entry.publisher || '',
                 address: entry.address || '',
                 abstract: entry.abstract || '',
-                keywords: entry.keywords ? entry.keywords.split(/[,;]/).map(k => k.trim()) : [],
+                keywords: entry.keywords || [],
                 series: entry.series || '',
                 number: entry.number || '',
                 edition: entry.edition || '',
                 url: entry.url || '',
                 note: entry.note || '',
-                language: entry.language || detectLanguage(entry.title || ''),
-                citationKey: entry.citationKey
+                language: detectLanguage(entry.language || entry.title || ''),
+                citationKey: entry.citationKey,
+                callNumber: entry.callNumber || ''
             }));
-        }
-        
-        function parseAuthors(authorString) {
-            if (!authorString) return [];
-            
-            // Split by 'and'
-            const authors = authorString.split(/\s+and\s+/i);
-            return authors.map(author => {
-                // Handle "Last, First" format
-                if (author.includes(',')) {
-                    const [last, first] = author.split(',').map(s => s.trim());
-                    return `${first} ${last}`;
-                }
-                return author.trim();
-            });
         }
         
         function mapEntryType(type) {
@@ -1343,19 +1427,30 @@
         }
         
         function detectLanguage(text) {
-            // Simple language detection based on character sets
+            // Check explicit language codes
+            const langLower = text.toLowerCase();
+            if (langLower === 'eng' || langLower === 'english') return '英語';
+            if (langLower === 'jpn' || langLower === 'japanese') return '日本語';
+            if (langLower === 'ger' || langLower === 'german') return 'ドイツ語';
+            if (langLower === 'fre' || langLower === 'french') return 'フランス語';
+            if (langLower === 'ara' || langLower === 'arabic') return 'アラビア語';
+            if (langLower === 'heb' || langLower === 'hebrew') return 'ヘブライ語';
+            if (langLower === 'akk' || langLower === 'akkadian') return 'アッカド語';
+            if (langLower === 'uga' || langLower === 'ugaritic') return 'ウガリット語';
+            if (langLower === 'egy' || langLower === 'egyptian') return 'エジプト語';
+            
+            // Handle multiple languages (e.g., "eng;jpn")
+            if (langLower.includes(';')) {
+                const langs = langLower.split(';').map(l => l.trim());
+                const detectedLangs = langs.map(l => detectLanguage(l)).filter(l => l !== '英語');
+                return detectedLangs.length > 0 ? detectedLangs.join('・') : '多言語';
+            }
+            
+            // Character-based detection
             if (/[\u0600-\u06FF]/.test(text)) return 'アラビア語';
             if (/[\u0590-\u05FF]/.test(text)) return 'ヘブライ語';
             if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text)) return '日本語';
             if (/[А-Яа-я]/.test(text)) return 'ロシア語';
-            
-            // Check language field content
-            const langLower = text.toLowerCase();
-            if (langLower.includes('eng')) return '英語';
-            if (langLower.includes('ger')) return 'ドイツ語';
-            if (langLower.includes('akk')) return 'アッカド語';
-            if (langLower.includes('uga')) return 'ウガリット語';
-            if (langLower.includes('egy')) return 'エジプト語';
             
             return '英語';
         }
@@ -1486,6 +1581,7 @@
                 if (item.journal) metaItems.push(`<div class="meta-item"><span>📖</span><span>${item.journal}</span></div>`);
                 if (item.volume) metaItems.push(`<div class="meta-item"><span>📕</span><span>Vol. ${item.volume}</span></div>`);
                 if (item.pages) metaItems.push(`<div class="meta-item"><span>📄</span><span>pp. ${item.pages}</span></div>`);
+                if (item.callNumber) metaItems.push(`<div class="meta-item"><span>🏷️</span><span>${item.callNumber}</span></div>`);
                 
                 const keywordsHtml = item.keywords.length > 0 ? `
                     <div class="result-tags">
@@ -1566,6 +1662,7 @@
             if (item.series) bibliographicInfo.push(`${t('detail.series')}: ${item.series}`);
             if (item.number) bibliographicInfo.push(`${t('detail.number')}: ${item.number}`);
             if (item.edition) bibliographicInfo.push(`${t('detail.edition')}: ${item.edition}`);
+            if (item.callNumber) bibliographicInfo.push(`${t('detail.callNumber')}: ${item.callNumber}`);
             
             if (bibliographicInfo.length > 0) {
                 detailSections.push(`
@@ -1613,6 +1710,7 @@
             
             const identifiers = [];
             if (item.isbn) identifiers.push(`ISBN: ${item.isbn}`);
+            if (item.issn) identifiers.push(`ISSN: ${item.issn}`);
             if (item.doi) identifiers.push(`DOI: ${item.doi}`);
             if (item.url) identifiers.push(`URL: <a href="${item.url}" target="_blank" style="color: var(--accent-blue);">${item.url}</a>`);
             
@@ -1675,7 +1773,7 @@
             }
             
             initSettings();
-            loadBibTeXFile();
+            loadRDFFile();
         };
     </script>
 </body>
