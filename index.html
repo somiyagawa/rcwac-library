@@ -106,6 +106,11 @@
         .logo-img {
             height: 60px;
             width: auto;
+            transition: filter 0.3s ease;
+        }
+        
+        [data-theme="dark"] .logo-img {
+            filter: invert(1) brightness(0.9);
         }
         
         .logo-text h1 {
@@ -127,8 +132,8 @@
             gap: 1rem;
         }
         
-        /* Theme toggle */
-        .theme-toggle {
+        /* Control buttons */
+        .control-button {
             background: transparent;
             border: 2px solid var(--border-color);
             border-radius: 50px;
@@ -140,9 +145,10 @@
             color: var(--text-primary);
             transition: all 0.3s ease;
             font-size: 0.9rem;
+            white-space: nowrap;
         }
         
-        .theme-toggle:hover {
+        .control-button:hover {
             border-color: var(--accent-blue);
             background: var(--hover-bg);
         }
@@ -555,7 +561,7 @@
         }
         
         /* Responsive Design */
-        @media (max-width: 768px) {
+                    @media (max-width: 768px) {
             .header-content {
                 justify-content: center;
             }
@@ -567,6 +573,16 @@
             
             .logo-img {
                 height: 50px;
+            }
+            
+            .header-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .control-button {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
             }
             
             .search-header {
@@ -583,6 +599,22 @@
                 padding: 1.5rem;
             }
         }
+        
+        /* Info box */
+        .info-box {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .info-box h4 {
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -597,14 +629,18 @@
                          class="logo-img">
                     <div class="logo-text">
                         <h1>WASRC Digital Library</h1>
-                        <p>西アジア文明研究センター電子図書館</p>
-                        <p style="font-size: 0.85rem;">Research Center for West Asian Civilization</p>
+                        <p data-i18n="header.subtitle">西アジア文明研究センター電子図書館</p>
+                        <p style="font-size: 0.85rem;" data-i18n="header.subtitle2">Research Center for West Asian Civilization</p>
                     </div>
                 </div>
                 <div class="header-controls">
-                    <button class="theme-toggle" onclick="toggleTheme()">
+                    <button class="control-button" onclick="toggleLanguage()">
+                        <span id="langIcon">🌐</span>
+                        <span id="langText" data-i18n="controls.language">English</span>
+                    </button>
+                    <button class="control-button" onclick="toggleTheme()">
                         <span id="themeIcon">🌙</span>
-                        <span id="themeText">ダークモード</span>
+                        <span id="themeText" data-i18n="controls.darkMode">ダークモード</span>
                     </button>
                 </div>
             </div>
@@ -615,7 +651,7 @@
         <section class="status-section">
             <div class="container">
                 <div class="status-message" id="statusMessage">
-                    <span class="status-loading">📖 BibTeXファイルを読み込み中...</span>
+                    <span class="status-loading" data-i18n="status.loading">📖 BibTeXファイルを読み込み中...</span>
                 </div>
             </div>
         </section>
@@ -624,20 +660,20 @@
             <div class="container">
                 <div class="search-container">
                     <div class="search-header">
-                        <button class="search-tab active" onclick="setSearchType('all')">総合検索</button>
-                        <button class="search-tab" onclick="setSearchType('title')">書名検索</button>
-                        <button class="search-tab" onclick="setSearchType('author')">著者検索</button>
-                        <button class="search-tab" onclick="setSearchType('keyword')">キーワード検索</button>
-                        <button class="search-tab" onclick="setSearchType('year')">出版年検索</button>
+                        <button class="search-tab active" onclick="setSearchType('all')" data-i18n="search.all">総合検索</button>
+                        <button class="search-tab" onclick="setSearchType('title')" data-i18n="search.title">書名検索</button>
+                        <button class="search-tab" onclick="setSearchType('author')" data-i18n="search.author">著者検索</button>
+                        <button class="search-tab" onclick="setSearchType('keyword')" data-i18n="search.keyword">キーワード検索</button>
+                        <button class="search-tab" onclick="setSearchType('year')" data-i18n="search.year">出版年検索</button>
                     </div>
                     
                     <form class="search-form" onsubmit="performSearch(event)">
                         <div class="search-input-container">
                             <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" placeholder="データを読み込み中..." id="searchInput" disabled>
+                            <input type="text" class="search-input" data-i18n-placeholder="search.placeholder" placeholder="データを読み込み中..." id="searchInput" disabled>
                         </div>
                         
-                        <button type="submit" class="search-button" id="searchButton" disabled>検索実行</button>
+                        <button type="submit" class="search-button" id="searchButton" data-i18n="search.button" disabled>検索実行</button>
                     </form>
                 </div>
             </div>
@@ -646,28 +682,28 @@
         <section class="results-section">
             <div class="container">
                 <div class="results-header">
-                    <div class="results-count" id="resultsCount">データベースを読み込み中...</div>
+                    <div class="results-count" id="resultsCount" data-i18n="results.loading">データベースを読み込み中...</div>
                     <div class="sort-options">
-                        <label for="sortSelect" style="color: var(--text-secondary);">並び替え:</label>
+                        <label for="sortSelect" style="color: var(--text-secondary);" data-i18n="sort.label">並び替え:</label>
                         <select id="sortSelect" class="sort-select" onchange="sortResults()">
-                            <option value="relevance">関連度順</option>
-                            <option value="year-desc">出版年（新しい順）</option>
-                            <option value="year-asc">出版年（古い順）</option>
-                            <option value="title">タイトル順</option>
-                            <option value="author">著者名順</option>
+                            <option value="relevance" data-i18n="sort.relevance">関連度順</option>
+                            <option value="year-desc" data-i18n="sort.yearDesc">出版年（新しい順）</option>
+                            <option value="year-asc" data-i18n="sort.yearAsc">出版年（古い順）</option>
+                            <option value="title" data-i18n="sort.title">タイトル順</option>
+                            <option value="author" data-i18n="sort.author">著者名順</option>
                         </select>
                     </div>
                 </div>
                 
                 <div class="loader" id="loader">
                     <div class="loader-spinner"></div>
-                    <p style="margin-top: 1rem; color: var(--text-secondary);">検索中...</p>
+                    <p style="margin-top: 1rem; color: var(--text-secondary);" data-i18n="loader.searching">検索中...</p>
                 </div>
                 
                 <div id="resultsContainer">
                     <div class="empty-state">
                         <div class="empty-state-icon">⏳</div>
-                        <p>データベースを読み込んでいます...</p>
+                        <p data-i18n="empty.loading">データベースを読み込んでいます...</p>
                     </div>
                 </div>
             </div>
@@ -686,20 +722,262 @@
         let bibData = [];
         let currentSearchType = 'all';
         let currentSearchResults = [];
+        let currentLanguage = 'ja';
         const BIBTEX_FILENAME = 'export-data.bib';
         
-        // Theme management
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeToggle(savedTheme);
+        // Translation data
+        const translations = {
+            ja: {
+                header: {
+                    subtitle: '西アジア文明研究センター電子図書館',
+                    subtitle2: 'Research Center for West Asian Civilization'
+                },
+                controls: {
+                    language: 'English',
+                    darkMode: 'ダークモード',
+                    lightMode: 'ライトモード'
+                },
+                status: {
+                    loading: '📖 BibTeXファイルを読み込み中...',
+                    success: '✅ {filename} を読み込みました ({count}件の文献)',
+                    error: '❌ エラー: {filename} が見つかりません。ファイルがHTMLと同じフォルダにあることを確認してください。'
+                },
+                search: {
+                    all: '総合検索',
+                    title: '書名検索',
+                    author: '著者検索',
+                    keyword: 'キーワード検索',
+                    year: '出版年検索',
+                    placeholder: '検索キーワードを入力してください...',
+                    placeholderLoading: 'データを読み込み中...',
+                    button: '検索実行'
+                },
+                results: {
+                    loading: 'データベースを読み込み中...',
+                    database: 'データベース: {count}件',
+                    searchResults: '検索結果: {count}件'
+                },
+                sort: {
+                    label: '並び替え:',
+                    relevance: '関連度順',
+                    yearDesc: '出版年（新しい順）',
+                    yearAsc: '出版年（古い順）',
+                    title: 'タイトル順',
+                    author: '著者名順'
+                },
+                loader: {
+                    searching: '検索中...'
+                },
+                empty: {
+                    loading: 'データベースを読み込んでいます...',
+                    noResults: '検索結果が見つかりませんでした',
+                    error: 'BibTeXファイルの読み込みに失敗しました',
+                    fileName: 'ファイル名: {filename}'
+                },
+                detail: {
+                    author: '著者',
+                    unknownAuthor: '著者不明',
+                    bibliographic: '書誌情報',
+                    publicationInfo: '掲載情報',
+                    abstract: '要旨',
+                    keywords: 'キーワード',
+                    identifiers: '識別子',
+                    year: '出版年',
+                    type: '種別',
+                    language: '言語',
+                    publisher: '出版社',
+                    address: '出版地',
+                    series: 'シリーズ',
+                    number: '号',
+                    edition: '版',
+                    journal: '雑誌',
+                    volume: '巻',
+                    pages: 'ページ',
+                    copied: 'コピーしました！'
+                },
+                alert: {
+                    dbNotLoaded: 'データベースがまだ読み込まれていません'
+                }
+            },
+            en: {
+                header: {
+                    subtitle: 'Digital Library of Research Center for West Asian Civilization',
+                    subtitle2: 'University of Tsukuba'
+                },
+                controls: {
+                    language: '日本語',
+                    darkMode: 'Dark Mode',
+                    lightMode: 'Light Mode'
+                },
+                status: {
+                    loading: '📖 Loading BibTeX file...',
+                    success: '✅ Loaded {filename} ({count} references)',
+                    error: '❌ Error: {filename} not found. Please ensure the file is in the same folder as the HTML file.'
+                },
+                search: {
+                    all: 'All Fields',
+                    title: 'Title',
+                    author: 'Author',
+                    keyword: 'Keywords',
+                    year: 'Year',
+                    placeholder: 'Enter search keywords...',
+                    placeholderLoading: 'Loading data...',
+                    button: 'Search'
+                },
+                results: {
+                    loading: 'Loading database...',
+                    database: 'Database: {count} items',
+                    searchResults: 'Search results: {count} items'
+                },
+                sort: {
+                    label: 'Sort by:',
+                    relevance: 'Relevance',
+                    yearDesc: 'Year (Newest first)',
+                    yearAsc: 'Year (Oldest first)',
+                    title: 'Title',
+                    author: 'Author'
+                },
+                loader: {
+                    searching: 'Searching...'
+                },
+                empty: {
+                    loading: 'Loading database...',
+                    noResults: 'No results found',
+                    error: 'Failed to load BibTeX file',
+                    fileName: 'File name: {filename}'
+                },
+                detail: {
+                    author: 'Author(s)',
+                    unknownAuthor: 'Unknown author',
+                    bibliographic: 'Bibliographic Information',
+                    publicationInfo: 'Publication Details',
+                    abstract: 'Abstract',
+                    keywords: 'Keywords',
+                    identifiers: 'Identifiers',
+                    year: 'Year',
+                    type: 'Type',
+                    language: 'Language',
+                    publisher: 'Publisher',
+                    address: 'Place',
+                    series: 'Series',
+                    number: 'Number',
+                    edition: 'Edition',
+                    journal: 'Journal',
+                    volume: 'Volume',
+                    pages: 'Pages',
+                    copied: 'Copied!'
+                },
+                alert: {
+                    dbNotLoaded: 'Database not loaded yet'
+                }
+            }
+        };
+        
+        // Language type mappings
+        const languageNames = {
+            ja: {
+                'アラビア語': 'アラビア語',
+                'ヘブライ語': 'ヘブライ語',
+                '日本語': '日本語',
+                'ロシア語': 'ロシア語',
+                '英語': '英語',
+                'ドイツ語': 'ドイツ語',
+                'アッカド語': 'アッカド語',
+                'ウガリット語': 'ウガリット語',
+                'エジプト語': 'エジプト語'
+            },
+            en: {
+                'アラビア語': 'Arabic',
+                'ヘブライ語': 'Hebrew',
+                '日本語': 'Japanese',
+                'ロシア語': 'Russian',
+                '英語': 'English',
+                'ドイツ語': 'German',
+                'アッカド語': 'Akkadian',
+                'ウガリット語': 'Ugaritic',
+                'エジプト語': 'Egyptian'
+            }
+        };
+        
+        // Entry type mappings
+        const entryTypeNames = {
+            ja: {
+                '論文': '論文',
+                '図書': '図書',
+                '図書の一部': '図書の一部',
+                '論文集の一部': '論文集の一部',
+                '会議録': '会議録',
+                '修士論文': '修士論文',
+                '博士論文': '博士論文',
+                '技術報告書': '技術報告書',
+                'マニュアル': 'マニュアル',
+                'その他': 'その他',
+                '未刊行': '未刊行'
+            },
+            en: {
+                '論文': 'Article',
+                '図書': 'Book',
+                '図書の一部': 'Book Chapter',
+                '論文集の一部': 'In Collection',
+                '会議録': 'Conference Paper',
+                '修士論文': 'Master\'s Thesis',
+                '博士論文': 'PhD Thesis',
+                '技術報告書': 'Technical Report',
+                'マニュアル': 'Manual',
+                'その他': 'Other',
+                '未刊行': 'Unpublished'
+            }
+        };
+        
+        // Get translation
+        function t(key) {
+            const keys = key.split('.');
+            let value = translations[currentLanguage];
+            for (const k of keys) {
+                value = value[k];
+            }
+            return value;
         }
         
+        // Safe storage access
+        const safeStorage = {
+            getItem: (key) => {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    console.log('localStorage not available, using defaults');
+                    return null;
+                }
+            },
+            setItem: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.log('localStorage not available, changes will not persist');
+                }
+            }
+        };
+        
+        // Initialize theme and language
+        function initSettings() {
+            const savedTheme = safeStorage.getItem('theme') || 'light';
+            const savedLang = safeStorage.getItem('language') || 'ja';
+            
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            currentLanguage = savedLang;
+            document.documentElement.setAttribute('lang', savedLang);
+            
+            updateThemeToggle(savedTheme);
+            updateLanguageToggle(savedLang);
+            updateAllTranslations();
+        }
+        
+        // Toggle theme
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            safeStorage.setItem('theme', newTheme);
             updateThemeToggle(newTheme);
         }
         
@@ -708,10 +986,105 @@
             const text = document.getElementById('themeText');
             if (theme === 'dark') {
                 icon.textContent = '☀️';
-                text.textContent = 'ライトモード';
+                text.textContent = t('controls.lightMode');
             } else {
                 icon.textContent = '🌙';
-                text.textContent = 'ダークモード';
+                text.textContent = t('controls.darkMode');
+            }
+        }
+        
+        // Toggle language
+        function toggleLanguage() {
+            const newLang = currentLanguage === 'ja' ? 'en' : 'ja';
+            currentLanguage = newLang;
+            safeStorage.setItem('language', newLang);
+            document.documentElement.setAttribute('lang', newLang);
+            updateLanguageToggle(newLang);
+            updateAllTranslations();
+            
+            // Update search results if any
+            if (currentSearchResults.length > 0) {
+                displayResults(currentSearchResults);
+            }
+        }
+        
+        function updateLanguageToggle(lang) {
+            const text = document.getElementById('langText');
+            text.textContent = t('controls.language');
+        }
+        
+        // Update all translations
+        function updateAllTranslations() {
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                element.textContent = t(key);
+            });
+            
+            // Update placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                element.placeholder = t(key);
+            });
+            
+            // Update theme toggle text
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            updateThemeToggle(currentTheme);
+            
+            // Update page title
+            document.title = currentLanguage === 'ja' 
+                ? 'WASRC Digital Library | 西アジア文明研究センター電子図書館'
+                : 'WASRC Digital Library | Research Center for West Asian Civilization';
+            
+            // Update current status message if needed
+            const statusMessage = document.getElementById('statusMessage');
+            if (statusMessage.querySelector('.status-success')) {
+                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', BIBTEX_FILENAME).replace('{count}', bibData.length)}</span>`;
+            } else if (statusMessage.querySelector('.status-error') && statusMessage.querySelector('button')) {
+                // Re-render the manual upload button with correct language
+                statusMessage.innerHTML = `
+                    <span class="status-error">${currentLanguage === 'ja' 
+                        ? '自動読み込みに失敗しました。' 
+                        : 'Failed to load automatically.'}</span>
+                    <input type="file" id="manualFileInput" accept=".bib,.bibtex" style="display: none;">
+                    <button class="control-button" style="margin-left: 1rem;" onclick="document.getElementById('manualFileInput').click()">
+                        📁 ${currentLanguage === 'ja' ? 'ファイルを選択' : 'Select File'}
+                    </button>
+                `;
+                
+                // Re-attach the file input handler
+                document.getElementById('manualFileInput').addEventListener('change', function(e) {
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const content = e.target.result;
+                            parseBibTeX(content);
+                            
+                            statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', file.name).replace('{count}', bibData.length)}</span>`;
+                            
+                            const searchInput = document.getElementById('searchInput');
+                            const searchButton = document.getElementById('searchButton');
+                            searchInput.disabled = false;
+                            searchButton.disabled = false;
+                            searchInput.placeholder = t('search.placeholder');
+                            
+                            document.getElementById('resultsCount').textContent = t('results.database').replace('{count}', bibData.length);
+                            displayAllResults();
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+            }
+            
+            // Update results count
+            const resultsCount = document.getElementById('resultsCount');
+            if (resultsCount.textContent.includes(':')) {
+                if (currentSearchResults.length > 0 && currentSearchResults.length !== bibData.length) {
+                    resultsCount.textContent = t('results.searchResults').replace('{count}', currentSearchResults.length);
+                } else if (bibData.length > 0) {
+                    resultsCount.textContent = t('results.database').replace('{count}', bibData.length);
+                }
             }
         }
         
@@ -784,33 +1157,103 @@
             const searchInput = document.getElementById('searchInput');
             const searchButton = document.getElementById('searchButton');
             
-            try {
-                // Read the BibTeX file
-                const content = await window.fs.readFile(BIBTEX_FILENAME, { encoding: 'utf8' });
-                
+            let content = null;
+            
+            // Method 1: Try window.fs.readFile (for Claude environment)
+            if (window.fs && window.fs.readFile) {
+                try {
+                    content = await window.fs.readFile(BIBTEX_FILENAME, { encoding: 'utf8' });
+                } catch (error) {
+                    console.log('window.fs.readFile failed, trying fetch...');
+                }
+            }
+            
+            // Method 2: Try fetch (for web server)
+            if (!content) {
+                try {
+                    const response = await fetch(BIBTEX_FILENAME);
+                    if (response.ok) {
+                        content = await response.text();
+                    }
+                } catch (error) {
+                    console.log('Fetch failed, showing manual upload option...');
+                }
+            }
+            
+            // If content was loaded successfully
+            if (content) {
                 // Parse the BibTeX content
                 parseBibTeX(content);
                 
                 // Update status
-                statusMessage.innerHTML = `<span class="status-success">✅ ${BIBTEX_FILENAME} を読み込みました (${bibData.length}件の文献)</span>`;
+                statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', BIBTEX_FILENAME).replace('{count}', bibData.length)}</span>`;
                 
                 // Enable search
                 searchInput.disabled = false;
                 searchButton.disabled = false;
-                searchInput.placeholder = '検索キーワードを入力してください...';
+                searchInput.placeholder = t('search.placeholder');
                 
                 // Update results count and display all results
-                document.getElementById('resultsCount').textContent = `データベース: ${bibData.length}件`;
+                document.getElementById('resultsCount').textContent = t('results.database').replace('{count}', bibData.length);
                 displayAllResults();
+            } else {
+                // Show manual upload option
+                console.error('Could not load BibTeX file automatically');
+                statusMessage.innerHTML = `
+                    <span class="status-error">${currentLanguage === 'ja' 
+                        ? '自動読み込みに失敗しました。' 
+                        : 'Failed to load automatically.'}</span>
+                    <input type="file" id="manualFileInput" accept=".bib,.bibtex" style="display: none;">
+                    <button class="control-button" style="margin-left: 1rem;" onclick="document.getElementById('manualFileInput').click()">
+                        📁 ${currentLanguage === 'ja' ? 'ファイルを選択' : 'Select File'}
+                    </button>
+                `;
                 
-            } catch (error) {
-                console.error('Error loading BibTeX file:', error);
-                statusMessage.innerHTML = `<span class="status-error">❌ エラー: ${BIBTEX_FILENAME} が見つかりません。ファイルがHTMLと同じフォルダにあることを確認してください。</span>`;
+                // Add file input handler
+                document.getElementById('manualFileInput').addEventListener('change', function(e) {
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const content = e.target.result;
+                            parseBibTeX(content);
+                            
+                            statusMessage.innerHTML = `<span class="status-success">${t('status.success').replace('{filename}', file.name).replace('{count}', bibData.length)}</span>`;
+                            
+                            searchInput.disabled = false;
+                            searchButton.disabled = false;
+                            searchInput.placeholder = t('search.placeholder');
+                            
+                            document.getElementById('resultsCount').textContent = t('results.database').replace('{count}', bibData.length);
+                            displayAllResults();
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                
                 document.getElementById('resultsContainer').innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <p>BibTeXファイルの読み込みに失敗しました</p>
-                        <p style="font-size: 0.9rem; margin-top: 1rem;">ファイル名: ${BIBTEX_FILENAME}</p>
+                        <div class="empty-state-icon">📁</div>
+                        <p>${currentLanguage === 'ja' 
+                            ? 'BibTeXファイルを選択してください' 
+                            : 'Please select a BibTeX file'}</p>
+                        <div class="info-box" style="text-align: left; max-width: 600px; margin: 2rem auto;">
+                            <h4>${currentLanguage === 'ja' ? 'ファイル読み込みについて' : 'About File Loading'}</h4>
+                            <p>${currentLanguage === 'ja' 
+                                ? 'このシステムは以下の方法でBibTeXファイルを読み込みます：' 
+                                : 'This system loads BibTeX files using the following methods:'}</p>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                <li>${currentLanguage === 'ja'
+                                    ? 'Webサーバー経由: HTTPサーバーでホストされている場合、自動的に読み込みます'
+                                    : 'Via web server: Automatically loads when hosted on an HTTP server'}</li>
+                                <li>${currentLanguage === 'ja'
+                                    ? '手動選択: ローカルファイルは上のボタンから選択してください'
+                                    : 'Manual selection: Select local files using the button above'}</li>
+                            </ul>
+                            <p style="margin-top: 1rem;">${currentLanguage === 'ja'
+                                ? 'ヒント: Visual Studio CodeのLive ServerやPythonのhttp.serverなどを使用すると、自動読み込みが可能です。'
+                                : 'Tip: Use tools like VS Code Live Server or Python http.server for automatic loading.'}</p>
+                        </div>
                     </div>
                 `;
             }
@@ -911,7 +1354,7 @@
             const resultsContainer = document.getElementById('resultsContainer');
             
             if (bibData.length === 0) {
-                alert('データベースがまだ読み込まれていません');
+                alert(t('alert.dbNotLoaded'));
                 return;
             }
             
@@ -955,7 +1398,7 @@
                 loader.classList.remove('active');
                 
                 // Update results count
-                document.getElementById('resultsCount').textContent = `検索結果: ${currentSearchResults.length}件`;
+                document.getElementById('resultsCount').textContent = t('results.searchResults').replace('{count}', currentSearchResults.length);
                 
                 // Display results
                 displayResults(currentSearchResults);
@@ -1002,7 +1445,7 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🔍</div>
-                        <p>検索結果が見つかりませんでした</p>
+                        <p>${t('empty.noResults')}</p>
                     </div>
                 `;
                 return;
@@ -1017,8 +1460,8 @@
                 
                 const metaItems = [];
                 if (item.year) metaItems.push(`<div class="meta-item"><span>📅</span><span>${item.year}</span></div>`);
-                if (item.type) metaItems.push(`<div class="meta-item"><span>📚</span><span>${item.type}</span></div>`);
-                if (item.language) metaItems.push(`<div class="meta-item"><span>🌐</span><span>${item.language}</span></div>`);
+                if (item.type) metaItems.push(`<div class="meta-item"><span>📚</span><span>${entryTypeNames[currentLanguage][item.type] || item.type}</span></div>`);
+                if (item.language) metaItems.push(`<div class="meta-item"><span>🌐</span><span>${languageNames[currentLanguage][item.language] || item.language}</span></div>`);
                 if (item.journal) metaItems.push(`<div class="meta-item"><span>📖</span><span>${item.journal}</span></div>`);
                 if (item.volume) metaItems.push(`<div class="meta-item"><span>📕</span><span>Vol. ${item.volume}</span></div>`);
                 if (item.pages) metaItems.push(`<div class="meta-item"><span>📄</span><span>pp. ${item.pages}</span></div>`);
@@ -1034,7 +1477,7 @@
                     <div class="result-header">
                         <div>
                             <h3 class="result-title" onclick="showDetails('${item.id}')">${highlightSearchTerm(item.title)}</h3>
-                            <div class="result-authors">${highlightSearchTerm(item.authors.join(', ') || '著者不明')}</div>
+                            <div class="result-authors">${highlightSearchTerm(item.authors.join(', ') || t('detail.unknownAuthor'))}</div>
                         </div>
                     </div>
                     
@@ -1087,26 +1530,26 @@
             if (item.authors.length > 0) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">著者</div>
+                        <div class="detail-label">${t('detail.author')}</div>
                         <div class="detail-value">${item.authors.join(', ')}</div>
                     </div>
                 `);
             }
             
             const bibliographicInfo = [];
-            if (item.year) bibliographicInfo.push(`出版年: ${item.year}`);
-            if (item.type) bibliographicInfo.push(`種別: ${item.type}`);
-            if (item.language) bibliographicInfo.push(`言語: ${item.language}`);
-            if (item.publisher) bibliographicInfo.push(`出版社: ${item.publisher}`);
-            if (item.address) bibliographicInfo.push(`出版地: ${item.address}`);
-            if (item.series) bibliographicInfo.push(`シリーズ: ${item.series}`);
-            if (item.number) bibliographicInfo.push(`号: ${item.number}`);
-            if (item.edition) bibliographicInfo.push(`版: ${item.edition}`);
+            if (item.year) bibliographicInfo.push(`${t('detail.year')}: ${item.year}`);
+            if (item.type) bibliographicInfo.push(`${t('detail.type')}: ${entryTypeNames[currentLanguage][item.type] || item.type}`);
+            if (item.language) bibliographicInfo.push(`${t('detail.language')}: ${languageNames[currentLanguage][item.language] || item.language}`);
+            if (item.publisher) bibliographicInfo.push(`${t('detail.publisher')}: ${item.publisher}`);
+            if (item.address) bibliographicInfo.push(`${t('detail.address')}: ${item.address}`);
+            if (item.series) bibliographicInfo.push(`${t('detail.series')}: ${item.series}`);
+            if (item.number) bibliographicInfo.push(`${t('detail.number')}: ${item.number}`);
+            if (item.edition) bibliographicInfo.push(`${t('detail.edition')}: ${item.edition}`);
             
             if (bibliographicInfo.length > 0) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">書誌情報</div>
+                        <div class="detail-label">${t('detail.bibliographic')}</div>
                         <div class="detail-value">${bibliographicInfo.join('<br>')}</div>
                     </div>
                 `);
@@ -1115,11 +1558,11 @@
             if (item.journal || item.volume || item.pages) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">掲載情報</div>
+                        <div class="detail-label">${t('detail.publicationInfo')}</div>
                         <div class="detail-value">
-                            ${item.journal ? `雑誌: ${item.journal}<br>` : ''}
-                            ${item.volume ? `巻: ${item.volume}<br>` : ''}
-                            ${item.pages ? `ページ: ${item.pages}` : ''}
+                            ${item.journal ? `${t('detail.journal')}: ${item.journal}<br>` : ''}
+                            ${item.volume ? `${t('detail.volume')}: ${item.volume}<br>` : ''}
+                            ${item.pages ? `${t('detail.pages')}: ${item.pages}` : ''}
                         </div>
                     </div>
                 `);
@@ -1128,7 +1571,7 @@
             if (item.abstract) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">要旨</div>
+                        <div class="detail-label">${t('detail.abstract')}</div>
                         <div class="detail-value">${item.abstract}</div>
                     </div>
                 `);
@@ -1137,7 +1580,7 @@
             if (item.keywords.length > 0) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">キーワード</div>
+                        <div class="detail-label">${t('detail.keywords')}</div>
                         <div class="detail-value">
                             <div class="result-tags">
                                 ${item.keywords.map(keyword => `<span class="tag">${keyword}</span>`).join('')}
@@ -1155,7 +1598,7 @@
             if (identifiers.length > 0) {
                 detailSections.push(`
                     <div class="detail-section">
-                        <div class="detail-label">識別子</div>
+                        <div class="detail-label">${t('detail.identifiers')}</div>
                         <div class="detail-value">${identifiers.join('<br>')}</div>
                     </div>
                 `);
@@ -1183,7 +1626,7 @@
                 // Show feedback
                 const keyElement = event.target.closest('.result-bibtex-key');
                 const originalHTML = keyElement.innerHTML;
-                keyElement.innerHTML = '<span>✅</span><span>コピーしました！</span>';
+                keyElement.innerHTML = `<span>✅</span><span>${t('detail.copied')}</span>`;
                 setTimeout(() => {
                     keyElement.innerHTML = originalHTML;
                 }, 2000);
@@ -1203,7 +1646,14 @@
         
         // Initialize on page load
         window.onload = () => {
-            initTheme();
+            // Check for sandboxed environment
+            try {
+                localStorage.getItem('test');
+            } catch (e) {
+                console.log('Running in sandboxed environment - settings will not persist');
+            }
+            
+            initSettings();
             loadBibTeXFile();
         };
     </script>
